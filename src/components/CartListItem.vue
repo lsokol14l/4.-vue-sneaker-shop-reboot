@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-4 realative__heigth">
-    <div v-if="cartItems.length">
+    <div v-if="cartItems.length" class="flex flex-col gap-4">
       <cart-item
         :key="item.id"
         :id="item.id"

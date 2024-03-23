@@ -28,6 +28,16 @@ let sneakersSchema = new mongoose.Schema({
 
 let Sneaker = mongoose.model("item", sneakersSchema);
 
+let ordersSchema = new mongoose.Schema(
+  {
+    items: Array,
+    totalPrice: Number,
+  },
+  { timestamps: true }
+);
+
+let Order = mongoose.model(`order`, ordersSchema);
+
 app.get(`/items/all`, async (_req, res) => {
   let response = await Sneaker.find();
   res.send(response);
@@ -82,7 +92,7 @@ app.get(`/favorites`, async (req, res) => {
 
 app.get(`/item/addToFavorite`, async (req, res) => {
   let { id } = req.query;
-  let item = await Sneaker.findOne({ _id: id });
+  let item = await Sneaker.findOne({ id: id });
 
   item.isFavorite = !item.isFavorite;
 
@@ -93,4 +103,62 @@ app.get(`/item/addToFavorite`, async (req, res) => {
 app.get(`/cart/all`, async (req, res) => {
   let response = await Sneaker.find({ isAdded: true });
   res.send(response);
+});
+
+app.get(`/item/addToCart`, async (req, res) => {
+  let { id } = req.query;
+  let item = await Sneaker.findOne({ id: id });
+
+  if (item.isAdded) {
+    item.amount++;
+    await item.save();
+    res.send(item);
+  } else {
+    item.amount = 1;
+    item.isAdded = true;
+    await item.save();
+    res.send(item);
+  }
+});
+
+app.get(`/item/deleteFromCart`, async (req, res) => {
+  let { id } = req.query;
+  let item = await Sneaker.findOne({ id: id });
+
+  if (item.amount == 1) {
+    item.isAdded = false;
+  }
+  item.amount--;
+  await item.save();
+  res.send(item);
+});
+
+app.post(`/order/create`, async (req, res) => {
+  let { items, totalPrice } = req.body;
+
+  let order = new Order({
+    items: items,
+    totalPrice: totalPrice,
+  });
+
+  await order.save();
+  res.send(order);
+});
+
+app.post(`/refresh`, async (req, res) => {
+  let {items} = req.body;
+  console.log(items)
+  for (let i = 0; i < items.length; i++) {
+    let item = items[i];
+    let id = item.id;
+    let currentItem = await Sneaker.findOne({
+      id: id,
+    });
+    console.log(currentItem)
+    currentItem.amount = 0;
+    currentItem.isAdded = false;
+
+    await currentItem.save();
+  }
+  res.send(`ok`);
 });

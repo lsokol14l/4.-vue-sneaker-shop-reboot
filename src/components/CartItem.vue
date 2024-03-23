@@ -5,14 +5,23 @@
       <div class="flex justify-between">
         <div class="flex flex-col">
           <span class="">{{ title }} </span>
-          <span class="font-bold">{{ price }} руб.</span>
+          <span class="font-bold">{{ price }}р. x {{ amount }}</span>
         </div>
-        <div class="w-16 h-16 items-center justify-center flex">
+        <div class="w-20 h-16 items-end mt-3 mx-2 justify-center flex gap-2">
           <img
-            @click="deleteItem(id)"
-            class="opacity-50 hover:opacity-100 cursor-pointer transition"
+            @click="deleteFromCart(id)"
+            class="w-6 cursor-pointer transition"
             src="/close.svg"
             alt="delete__item"
+          />
+
+          <div class="text-center text-xl">{{ amount }}</div>
+          
+          <img
+            @click="addToCart(id)"
+            class="w-6 cursor-pointer transition"
+            src="/plus.svg"
+            alt="add__item"
           />
         </div>
       </div>
@@ -33,7 +42,8 @@ const props = defineProps({
   amount: Number,
 });
 
-const deleteItem = inject(`deleteItem`);
+const deleteFromCart = inject(`deleteFromCart`);
+const addToCart = inject(`addToCart`);
 </script>
 
 <style scoped></style>

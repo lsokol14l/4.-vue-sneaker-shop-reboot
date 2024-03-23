@@ -2,7 +2,7 @@
   <div class="grid grid-cols-4 gap-8">
     <sneaker-card
       :key="item.id"
-      :id="item._id"
+      :id="item.id"
       v-for="item in items"
       :price="item.price"
       :title="item.title"
