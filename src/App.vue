@@ -4,6 +4,7 @@ import { onMounted, ref, provide, computed, reactive, watch } from "vue";
 import axios from "axios";
 import AppHeader from "./components/AppHeader.vue";
 import DrawerCart from "./components/DrawerCart.vue";
+import debounce from "lodash.debounce";
 axios.defaults.baseURL = `http://localhost:3005`;
 
 //Объявление глобальных переменных
@@ -11,6 +12,7 @@ const search = reactive({
   sortBy: "name",
   searchInput: "",
 });
+
 let favorites = ref([]);
 let items = ref([]);
 
@@ -124,9 +126,12 @@ const loadItems = async () => {
     console.log(error);
   }
 };
-watch(search, async () => {
-  await loadItems();
-});
+watch(
+  search,
+  debounce(async () => {
+    await loadItems();
+  }, 500)
+);
 const loadData = async () => {
   await loadItems();
   await loadFavorites();
