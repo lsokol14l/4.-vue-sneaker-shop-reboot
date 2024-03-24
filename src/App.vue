@@ -130,7 +130,7 @@ watch(
   search,
   debounce(async () => {
     await loadItems();
-  }, 500)
+  }, 250)
 );
 const loadData = async () => {
   await loadItems();
