@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-4 gap-8">
+  <div class="grid grid-cols-4 gap-8" v-auto-animate>
     <sneaker-card
       :key="item.id"
       :id="item.id"

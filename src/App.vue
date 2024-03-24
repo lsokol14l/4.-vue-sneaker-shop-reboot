@@ -1,42 +1,48 @@
 <script setup>
-import { onMounted, ref, watch, provide, reactive, computed } from "vue";
+//Обычные импорты
+import { onMounted, ref, provide, computed, reactive, watch } from "vue";
 import axios from "axios";
 import AppHeader from "./components/AppHeader.vue";
-import CardList from "./components/CardList.vue";
 import DrawerCart from "./components/DrawerCart.vue";
-
 axios.defaults.baseURL = `http://localhost:3005`;
 
 //Объявление глобальных переменных
-let items = ref([]);
+const search = reactive({
+  sortBy: "name",
+  searchInput: "",
+});
 let favorites = ref([]);
+let items = ref([]);
+
+// Корзина (start)
+
 const drawerToggle = ref(false);
 const cartItems = ref([]);
 let totalPrice = ref(0);
-const isOrderCreating = ref(false);
-
-
-const cartButtonDisabled = computed(() =>
-  isOrderCreating.value ? true : totalPrice.value ? false : true
-);
 
 //Объявление функций(смотри на название)
-const createOrder = async () => {
-  try {
-    let response = await axios.post(`/order/create`, {
-      items: cartItems.value,
-      totalPrice: totalPrice.value,
-    });
-    let order = response.data;
-    refresh();
-    cartItems.value = [];
+const addToCart = async (id) => {
+  let response = await axios.get(`/item/addToCart`, { params: { id: id } });
 
-    return order;
-  } catch (error) {
-    console.log(error);
-  } finally {
-    isOrderCreating.value = false;
-  }
+  await loadCart();
+  await loadItems();
+  await loadFavorites();
+
+  countTotalPrice();
+};
+const cartToggle = () => {
+  drawerToggle.value = !drawerToggle.value;
+};
+const deleteFromCart = async (id) => {
+  let response = await axios.get(`/item/deleteFromCart`, {
+    params: { id: id },
+  });
+
+  await loadCart();
+  await loadItems();
+  await loadFavorites();
+
+  countTotalPrice();
 };
 
 const refresh = async () => {
@@ -46,8 +52,8 @@ const refresh = async () => {
     console.log(err);
   }
   loadData();
+  cartItems.value = [];
 };
-
 const countTotalPrice = () => {
   totalPrice.value = 0;
   for (let i = 0; i < cartItems.value.length; i++) {
@@ -56,12 +62,23 @@ const countTotalPrice = () => {
     totalPrice.value += currentSum;
   }
 };
+const loadCart = async () => {
+  try {
+    let response = await axios.get(`/cart/all`);
+    cartItems.value = response.data;
+    //   .map((obj) => ({
+    //   ...obj,
+    //   isFavorite: false,
+    //   isAdded: false
+    // }))
+  } catch (error) {
+    console.log(error);
+  }
+};
 
-const search = reactive({
-  sortBy: "name",
-  searchInput: "",
-});
+// корзинa (end)
 
+//Запросы данных с бд (start)
 const loadFavorites = async () => {
   try {
     let response = await axios.get(`/favorites`);
@@ -83,45 +100,13 @@ const loadFavorites = async () => {
     console.log(error);
   }
 };
+const addToFavorite = async (id) => {
+  await axios.get(`/item/addToFavorite`, { params: { id: id } });
 
-const loadItems = async () => {
-  try {
-    let response = await axios.get(`/items/all`);
-    items.value = response.data;
-    //   .map((obj) => ({
-    //   ...obj,
-    //   isFavorite: false,
-    //   isAdded: false
-    // }))
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-const loadCart = async () => {
-  try {
-    let response = await axios.get(`/cart/all`);
-    cartItems.value = response.data;
-    //   .map((obj) => ({
-    //   ...obj,
-    //   isFavorite: false,
-    //   isAdded: false
-    // }))
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-const loadData = async () => {
-  await loadItems();
   await loadFavorites();
-  await loadCart();
-  countTotalPrice();
+  await loadItems();
 };
-
-onMounted(loadData);
-
-watch(search, async () => {
+const loadItems = async () => {
   try {
     let response = await axios.get(`/items/search`, {
       params: {
@@ -130,56 +115,45 @@ watch(search, async () => {
       },
     });
     items.value = response.data;
+    //   .map((obj) => ({
+    //   ...obj,
+    //   isFavorite: false,
+    //   isAdded: false
+    // }))
   } catch (error) {
     console.log(error);
   }
+};
+watch(search, async () => {
+  await loadItems();
 });
-
-const addToFavorite = async (id) => {
-  await axios.get(`/item/addToFavorite`, { params: { id: id } });
-
+const loadData = async () => {
+  await loadItems();
   await loadFavorites();
-  await loadItems();
-};
-
-const addToCart = async (id) => {
-  let response = await axios.get(`/item/addToCart`, { params: { id: id } });
-
   await loadCart();
-  await loadItems();
-
   countTotalPrice();
 };
+onMounted(loadData);
+//Запросы данных с бд (end)
 
-const cartToggle = () => {
-  drawerToggle.value = !drawerToggle.value;
-};
-
-const deleteFromCart = async (id) => {
-  let response = await axios.get(`/item/deleteFromCart`, {
-    params: { id: id },
-  });
-
-  await loadCart();
-  await loadItems();
-
-  countTotalPrice();
-};
-
-//передача функций в дочерние элементы
+//передача в дочерние элементы
+provide(`search`, search);
+provide(`items`, items);
 provide(`addToFavorite`, addToFavorite);
 provide(`cartToggle`, cartToggle);
 provide(`addToCart`, addToCart);
 provide(`deleteFromCart`, deleteFromCart);
 provide(`cartItems`, cartItems);
+provide(`loadData`, loadData);
+provide(`favorites`, favorites);
+provide(`refresh`, refresh);
 </script>
 
 <template>
   <DrawerCart
     v-if="drawerToggle"
     :total-price="totalPrice"
-    @create-order="createOrder"
-    :cart-button-disabled="cartButtonDisabled"
+    :cart-items="cartItems"
   />
   <div class="wrapper w-4/5 mx-auto bg-white rounded-t-xl shadow-xl mt-14">
     <app-header
@@ -188,47 +162,7 @@ provide(`cartItems`, cartItems);
     ></app-header>
 
     <div class="p-10">
-      <div class="flex justify-between mb-8">
-        <h2 class="text-2xl font-bold">Все кроссовки:</h2>
-
-        <div class="flex items-center gap-5">
-          <select
-            v-model="search.sortBy"
-            class="py-1.5 px-3.5 border rounded-md outline-none bg-white"
-            name=""
-            id=""
-          >
-            <option value="name">По названию</option>
-            <option value="cheaper">По цене (сначала дешёвые)</option>
-            <option value="rich">По цене (сначала дорогие)</option>
-          </select>
-
-          <div class="relative">
-            <img
-              class="absolute top-2.5 left-2.5"
-              src="/search.svg"
-              alt="search"
-            />
-            <input
-              v-model="search.searchInput"
-              class="transition border rounded-md py-1 px-3 pl-8 pr-4 outline-none focus:border-gray-400"
-              type="text"
-              name=""
-              id=""
-              placeholder="Поиск..."
-            />
-          </div>
-        </div>
-      </div>
-      <div v-if="items" class="mt-10">
-        <card-list :items="items"></card-list>
-      </div>
-      <div
-        v-if="items.length === 0"
-        class="mt-10 flex justify-center items-center text-2xl font-bold"
-      >
-        Ничего не найдено...
-      </div>
+      <router-view></router-view>
     </div>
   </div>
 </template>

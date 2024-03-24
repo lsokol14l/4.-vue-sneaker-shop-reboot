@@ -32,16 +32,12 @@ let ordersSchema = new mongoose.Schema(
   {
     items: Array,
     totalPrice: Number,
+    orderId: Number,
   },
   { timestamps: true }
 );
 
 let Order = mongoose.model(`order`, ordersSchema);
-
-app.get(`/items/all`, async (_req, res) => {
-  let response = await Sneaker.find();
-  res.send(response);
-});
 
 app.get(`/items/search`, async (req, res) => {
   let { sortBy, searchInput } = req.query;
@@ -135,10 +131,12 @@ app.get(`/item/deleteFromCart`, async (req, res) => {
 
 app.post(`/order/create`, async (req, res) => {
   let { items, totalPrice } = req.body;
+  let orders = await Order.find({});
 
   let order = new Order({
     items: items,
     totalPrice: totalPrice,
+    orderId: orders.length + 1,
   });
 
   await order.save();
@@ -146,15 +144,15 @@ app.post(`/order/create`, async (req, res) => {
 });
 
 app.post(`/refresh`, async (req, res) => {
-  let {items} = req.body;
-  console.log(items)
+  let { items } = req.body;
+  console.log(items);
   for (let i = 0; i < items.length; i++) {
     let item = items[i];
     let id = item.id;
     let currentItem = await Sneaker.findOne({
       id: id,
     });
-    console.log(currentItem)
+    console.log(currentItem);
     currentItem.amount = 0;
     currentItem.isAdded = false;
 

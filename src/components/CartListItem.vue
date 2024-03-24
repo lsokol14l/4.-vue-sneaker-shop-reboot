@@ -1,6 +1,38 @@
+<script setup>
+import { inject } from "vue";
+import CartItem from "./CartItem.vue";
+import InfoBlock from "./InfoBlock.vue";
+let cartItems = inject(`cartItems`);
+const props = defineProps({
+  orderId: Number,
+});
+</script>
+
 <template>
   <div class="flex flex-col gap-4 realative__heigth">
-    <div v-if="cartItems.length" class="flex flex-col gap-4">
+    <div
+      v-if="!cartItems.length || props.orderId"
+      class="h-full flex items-center"
+    >
+      <info-block
+        v-if="!cartItems.length && !props.orderId"
+        title="Ваша корзина пуста"
+        description="Добавьте хотя бы одну пару кроссовок, чтобы сделать заказ"
+        image-url="/package-icon.png"
+      ></info-block>
+      <info-block
+        v-if="props.orderId"
+        title="Ваш заказ оформлен!"
+        :description="
+          'Ваш заказ #' +
+          props.orderId +
+          ' скоро будет передан курьерской доставке.'
+        "
+        image-url="/order-success-icon.png"
+      ></info-block>
+    </div>
+
+    <div class="flex flex-col gap-4" v-auto-animate v-else>
       <cart-item
         :key="item.id"
         :id="item.id"
@@ -13,16 +45,8 @@
         :amount="item.amount"
       ></cart-item>
     </div>
-    <div class="text-center text-xl mt-4" v-else>Ваша корзина пуста...</div>
   </div>
 </template>
-
-<script setup>
-import { inject } from 'vue'
-import CartItem from './CartItem.vue'
-
-let cartItems = inject(`cartItems`)
-</script>
 
 <style scoped>
 .realative__heigth {
